@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>컨트리볼 합치기 게임</title>
+  <title>컨트리볼 수박 게임</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
@@ -48,7 +48,7 @@
   </style>
 </head>
 <body>
-  <h1>컨트리볼 합치기 게임</h1>
+  <h1>컨트리볼 수박 게임</h1>
   <canvas id="gameCanvas" width="380" height="600"></canvas>
   <div id="scoreBoard">
     <span id="score">점수: 0</span>
@@ -195,7 +195,7 @@
       if(playing) requestAnimationFrame(update);
     }
 
-    // 합치기(merge)
+    // 수박(merge)
     function combineBall(now){
       balls.push(now);
       for(let i=0;i<balls.length;i++){
