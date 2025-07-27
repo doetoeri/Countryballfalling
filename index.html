@@ -2,17 +2,217 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>컨트리볼 캐처 게임</title>
-  <link rel="stylesheet" href="style.css">
+  <title>컨트리볼 합치기 게임</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: #E6F3FC;
+      font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin-top: 30px;
+      color: #273C79;
+    }
+    #gameCanvas {
+      margin: 22px auto 14px;
+      background: #ffffff;
+      display: block;
+      border: 3px solid #254a6a;
+      border-radius: 22px;
+      box-shadow: 0 4px 24px #254a6a28;
+    }
+    #scoreBoard {
+      font-size: 20px;
+      margin: 4px 0 20px 0;
+    }
+    #startBtn {
+      padding: 14px 30px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: #2F62A4;
+      color: #fff;
+      border: none;
+      border-radius: 18px;
+      cursor: pointer;
+      letter-spacing: 1.5px;
+      transition: background 0.2s;
+      margin-bottom: 18px;
+    }
+    #startBtn:hover { background: #1a385f; }
+    @media (max-width:480px){
+      #gameCanvas {width:99vw !important; max-width:99vw !important;}
+    }
+  </style>
 </head>
 <body>
-  <h1>컨트리볼 캐처</h1>
-  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <h1>컨트리볼 합치기 게임</h1>
+  <canvas id="gameCanvas" width="380" height="600"></canvas>
   <div id="scoreBoard">
     <span id="score">점수: 0</span>
-    <span id="timer">남은 시간: 30</span>
+    <button id="startBtn">게임 시작</button>
   </div>
-  <button id="startBtn">게임 시작</button>
-  <script src="main.js"></script>
+  <p style="color:#273C79;font-size:1rem;">볼을 드래그(모바일은 옆으로 문지르기)해서 놓고, 같은 볼이 붙으면 다음 단계로 커집니다.<br />최대는 미국(USA) 컨트리볼!</p>
+  <script>
+    // 컨트리볼 정의: korea → japan → poland → uk → china → usa 순서
+    const ballsList = [
+      {name:"korea",  img:"images/korea.png",   radius:26, score:1},
+      {name:"japan",  img:"images/japan.png",   radius:35, score:3},
+      {name:"poland", img:"images/poland.png",  radius:44, score:7},
+      {name:"uk",     img:"images/uk.png",      radius:54, score:15},
+      {name:"china",  img:"images/china.png",   radius:64, score:31},
+      {name:"usa",    img:"images/usa.png",     radius:78, score:70}
+    ];
+
+    // 이미지 미리 로드
+    const ballImgs = ballsList.map(a => {
+      const img = new Image();
+      img.src = a.img;
+      return img;
+    });
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let balls = [];
+    let nextBall = 0;
+    let falling = null;
+    let playing = false;
+    let score = 0;
+    let dragX = null;
+
+    // 원(컨트리볼) 충돌 감지
+    function isCollide(a,b){
+      const dx = a.x-b.x, dy = a.y-b.y;
+      return Math.hypot(dx,dy) < a.radius+b.radius-3;
+    }
+
+    // 새 컨트리볼 등장(떨어지기)
+    function spawnBall(){
+      return {
+        type: nextBall,
+        x: canvas.width/2,
+        y: 36,
+        radius: ballsList[nextBall].radius,
+        vy: 0,
+      };
+    }
+
+    // 게임 시작/리셋
+    document.getElementById('startBtn').onclick = function(){
+      balls = [];
+      score = 0;
+      nextBall = Math.floor(Math.random()*2);
+      falling = spawnBall();
+      playing = true;
+      document.getElementById('score').textContent = "점수: 0";
+      update();
+    };
+
+    // 마우스/터치로 볼 옮기기
+    canvas.addEventListener('mousedown', e => {
+      if(!playing||!falling) return;
+      dragX = e.offsetX;
+    });
+    canvas.addEventListener('mouseup', e => {
+      if(!playing||!falling) return;
+      dragX = null;
+    });
+    canvas.addEventListener('mousemove', e => {
+      if(!playing||!falling||dragX===null) return;
+      falling.x = Math.max(falling.radius, Math.min(canvas.width-falling.radius, e.offsetX));
+    });
+    // 모바일 터치
+    canvas.addEventListener('touchmove', e => {
+      if(!playing||!falling) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      let x = e.touches[0].clientX - rect.left;
+      falling.x = Math.max(falling.radius, Math.min(canvas.width-falling.radius, x));
+    }, {passive:false});
+
+    // 클릭시 바로 떨어뜨리기
+    canvas.addEventListener('click', e => {
+      if(!playing||!falling) return;
+      if(falling.y > 38) return;
+      falling.vy = 3;
+    });
+
+    function update(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // 기존 컨트리볼
+      for(let b of balls)
+        ctx.drawImage(ballImgs[b.type], b.x-b.radius, b.y-b.radius, b.radius*2, b.radius*2);
+
+      // 내려오는 볼
+      if(falling){
+        if(falling.vy>0 || dragX===null){
+          falling.vy += 0.18;
+          falling.y += falling.vy;
+        }
+        ctx.drawImage(ballImgs[falling.type], falling.x-falling.radius, falling.y-falling.radius, falling.radius*2, falling.radius*2);
+
+        // 화면 아래/충돌 검사
+        let stuck = false;
+        if(falling.y+falling.radius >= canvas.height){
+          falling.y = canvas.height-falling.radius;
+          stuck = true;
+        }
+        else{
+          for(let b of balls){
+            if(isCollide(falling, b) && falling.y < b.y){
+              // 붙도록 보정(중간점)
+              let angle = Math.atan2(falling.y-b.y, falling.x-b.x);
+              falling.y = b.y + Math.sin(angle)*(falling.radius+b.radius+1);
+              stuck = true;
+              break;
+            }
+          }
+        }
+        if(stuck){
+          combineBall(falling);
+          falling = null;
+          nextBall = Math.random()<0.5 ? 0 : 1; // korea/japan 중 하나 등장
+          setTimeout(()=>{
+            if(!playing) return;
+            falling = spawnBall();
+          },220);
+        }
+      }
+
+      // Game Over (최상단 넘기면 끝)
+      for(let b of balls){
+        if(b.y-b.radius<2){
+          ctx.font = "bold 40px Arial";
+          ctx.fillStyle="#ec4141";
+          ctx.fillText("GAME OVER!", 65, 280);
+          playing = false;
+        }
+      }
+      document.getElementById('score').textContent = `점수: ${score}`;
+      if(playing) requestAnimationFrame(update);
+    }
+
+    // 합치기(merge)
+    function combineBall(now){
+      balls.push(now);
+      for(let i=0;i<balls.length;i++){
+        for(let j=i+1;j<balls.length;j++){
+          const a = balls[i], b = balls[j];
+          if(a.type===b.type && isCollide(a,b) && !a.merged && !b.merged && a.type<ballsList.length-1){
+            let newType = a.type+1;
+            let newX = (a.x+b.x)/2, newY = (a.y+b.y)/2;
+            let newBall = {type:newType, x:newX, y:newY, radius:ballsList[newType].radius, vy:0, merged:false};
+            a.merged = b.merged = true;
+            score += ballsList[newType].score;
+            balls.splice(j,1); balls.splice(i,1);
+            combineBall(newBall); return;
+          }
+        }
+      }
+    }
+  </script>
 </body>
 </html>
