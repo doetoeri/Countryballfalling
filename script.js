@@ -4,8 +4,6 @@ const countryballs = {
   usa:     { img: 'images/usa.png',     score: 10 },
   japan:   { img: 'images/japan.png',   score: 8 },
   uk:      { img: 'images/uk.png',      score: 7 },
-  germany: { img: 'images/germany.png', score: 5 },
-  france:  { img: 'images/france.png',  score: 5 },
   poland:  { img: 'images/poland.png',  score: 3 },
   china:   { img: 'images/china.png',   score: -5 }
 };
